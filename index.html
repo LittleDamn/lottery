@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guo2025公平刮刮乐</title>
+    <style>
+        :root {
+            --primary-color: #4285f4;
+            --secondary-color: #34a853;
+            --accent-color: #ea4335;
+            --light-color: #f8f9fa;
+            --dark-color: #202124;
+            --text-color: #3c4043;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8f0fe 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: var(--text-color);
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+        
+        /* 刮刮乐区域 */
+        .scratch-area {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            margin: 20px auto;
+            background: #f1f3f4;
+            border-radius: 12px;
+            overflow: hidden;
+            touch-action: none;
+        }
+        
+        .scratch-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+        
+        .scratch-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 5px;
+            padding: 10px;
+        }
+        
+        .scratch-item {
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            visibility: hidden;
+        }
+        
+        .scratch-item.g-letter {
+            color: var(--accent-color);
+        }
+        
+        /* 统计区域 */
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin: 20px 0;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #5f6368;
+        }
+        
+        /* 按钮 */
+        .btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(66, 133, 244, 0.3);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(66, 133, 244, 0.4);
+        }
+        
+        /* 结果弹窗 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            position: relative;
+            animation: modalFadeIn 0.3s;
+        }
+        
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .prize-result {
+            font-size: 1.8rem;
+            color: var(--accent-color);
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #5f6368;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Guo2025 公平刮刮乐</h1>
+        <p>刮出"G"字母越多，奖励越丰厚！</p>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="gCount">0</div>
+                <div class="stat-label">G字母</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="revealedCount">0</div>
+                <div class="stat-label">已刮开</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="prizeLevel">-</div>
+                <div class="stat-label">奖励等级</div>
+            </div>
+        </div>
+        
+        <div class="scratch-area">
+            <canvas class="scratch-canvas" id="scratchCanvas"></canvas>
+            <div class="scratch-content" id="scratchContent"></div>
+        </div>
+        
+        <button class="btn" id="resetBtn">重新开始</button>
+    </div>
+    
+    <div class="modal" id="resultModal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>抽奖结果</h2>
+            <div class="prize-result" id="prizeResult"></div>
+            <p id="prizeDesc"></p>
+            <button class="btn" id="confirmBtn">确定</button>
+        </div>
+    </div>
+    
+    <audio id="scratchSound" src="https://www.soundjay.com/mechanical/sounds/scratch-01.mp3" preload="auto"></audio>
+    <audio id="winSound" src="https://www.soundjay.com/human/sounds/applause-8.mp3" preload="auto"></audio>
+    
+    <script>
+        // 配置参数
+        const config = {
+            rows: 4,
+            cols: 5,
+            gProbability: 0.25, // 每个格子25%概率是G
+            prizeLevels: [
+                { minG: 0, name: "参与奖", reward: "谢谢惠顾", color: "#bdc1c6", probability: 0.3 },
+                { minG: 1, name: "三等奖", reward: "解锁隐藏题目", color: "#fbbc05", probability: 0.25 },
+                { minG: 3, name: "二等奖", reward: "三等奖+皮肤3天", color: "#34a853", probability: 0.2 },
+                { minG: 5, name: "一等奖", reward: "创建题目+Mod7天", color: "#4285f4", probability: 0.15 },
+                { minG: 7, name: "特等奖", reward: "创建比赛+Mod28天", color: "#ea4335", probability: 0.08 },
+                { minG: 20, name: "超强特等奖", reward: "Mod永久+沙漏笔🖊一支", color: "#ea4335", probability: 0.02 }
+            ],
+            otherLetters: ['菜', '就', '多', '练', '!']
+        };
+        
+        // 系统状态
+        const state = {
+            canvas: null,
+            ctx: null,
+            isScratching: false,
+            revealedCells: 0,
+            gCount: 0,
+            currentLevel: null,
+            items: [],
+            finalPrize: null
+        };
+        
+        // DOM元素
+        const elements = {
+            scratchCanvas: document.getElementById('scratchCanvas'),
+            scratchContent: document.getElementById('scratchContent'),
+            gCountDisplay: document.getElementById('gCount'),
+            revealedCountDisplay: document.getElementById('revealedCount'),
+            prizeLevelDisplay: document.getElementById('prizeLevel'),
+            resetBtn: document.getElementById('resetBtn'),
+            resultModal: document.getElementById('resultModal'),
+            prizeResult: document.getElementById('prizeResult'),
+            prizeDesc: document.getElementById('prizeDesc'),
+            confirmBtn: document.getElementById('confirmBtn'),
+            closeModal: document.querySelector('.close-modal'),
+            scratchSound: document.getElementById('scratchSound'),
+            winSound: document.getElementById('winSound')
+        };
+        
+        // 初始化刮刮乐
+        function initScratchCard() {
+            // 重置状态
+            state.revealedCells = 0;
+            state.gCount = 0;
+            state.items = [];
+            state.finalPrize = null;
+            updateStats();
+            
+            // 清空内容
+            elements.scratchContent.innerHTML = '';
+            
+            // 设置画布尺寸
+            const rect = elements.scratchCanvas.parentElement.getBoundingClientRect();
+            elements.scratchCanvas.width = rect.width;
+            elements.scratchCanvas.height = rect.height;
+            
+            // 初始化画布
+            state.ctx = elements.scratchCanvas.getContext('2d');
+            state.ctx.fillStyle = '#9aa0a6';
+            state.ctx.fillRect(0, 0, elements.scratchCanvas.width, elements.scratchCanvas.height);
+            state.ctx.globalCompositeOperation = 'destination-out';
+            
+            // 预先生成最终奖品（确保概率分布）
+            determineFinalPrize();
+            
+            // 创建格子
+            const cellWidth = elements.scratchCanvas.width / config.cols;
+            const cellHeight = elements.scratchCanvas.height / config.rows;
+            
+            // 计算需要的G字母数量（基于最终奖品要求）
+            const requiredG = state.finalPrize.minG;
+            let gPlaced = 0;
+            
+            // 先放置必需的G字母
+            const positions = [];
+            for (let row = 0; row < config.rows; row++) {
+                for (let col = 0; col < config.cols; col++) {
+                    positions.push({row, col});
+                }
+            }
+            
+            // 打乱位置
+            shuffleArray(positions);
+            
+            // 放置必需的G字母
+            for (let i = 0; i < requiredG && i < positions.length; i++) {
+                const pos = positions[i];
+                createCell(pos.row, pos.col, true);
+                gPlaced++;
+            }
+            
+            // 确保至少放置requiredG个G字母
+            while (gPlaced < requiredG && gPlaced < positions.length) {
+                const pos = positions[gPlaced];
+                createCell(pos.row, pos.col, true);
+                gPlaced++;
+            }
+            
+            // 随机放置剩余的G字母（不超过概率限制）
+            const remainingPositions = positions.slice(gPlaced);
+            const maxG = Math.min(
+                Math.floor(config.gProbability * config.rows * config.cols),
+                remainingPositions.length
+            );
+            
+            for (let i = 0; i < maxG - requiredG && i < remainingPositions.length; i++) {
+                if (Math.random() < 0.5) { // 50%机会再放一个G
+                    const pos = remainingPositions[i];
+                    createCell(pos.row, pos.col, true);
+                    gPlaced++;
+                }
+            }
+            
+            // 填充剩余格子
+            positions.forEach(pos => {
+                if (!state.items.some(item => item.row === pos.row && item.col === pos.col)) {
+                    createCell(pos.row, pos.col, false);
+                }
+            });
+        }
+        
+        // 创建格子
+        function createCell(row, col, forceG) {
+            const isG = forceG || Math.random() < config.gProbability;
+            const letter = isG ? 'G' : 
+                config.otherLetters[Math.floor(Math.random() * config.otherLetters.length)];
+            
+            const item = document.createElement('div');
+            item.className = `scratch-item ${isG ? 'g-letter' : ''}`;
+            item.textContent = letter;
+            item.dataset.row = row;
+            item.dataset.col = col;
+            elements.scratchContent.appendChild(item);
+            
+            state.items.push({
+                row,
+                col,
+                letter,
+                revealed: false,
+                element: item,
+                isG
+            });
+        }
+        
+        // 确定最终奖品（基于概率）
+        function determineFinalPrize() {
+            const random = Math.random();
+            let cumulativeProb = 0;
+            
+            // 确保概率总和为1
+            const totalProb = config.prizeLevels.reduce((sum, level) => sum + (level.probability || 0), 0);
+            const scaleFactor = 1 / totalProb;
+            
+            for (const level of config.prizeLevels) {
+                cumulativeProb += (level.probability || 0) * scaleFactor;
+                if (random <= cumulativeProb) {
+                    state.finalPrize = level;
+                    return;
+                }
+            }
+            
+            // 默认最低奖项
+            state.finalPrize = config.prizeLevels[0];
+        }
+        
+        // 打乱数组
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+        
+        // 处理刮擦动作
+        function handleScratch(e) {
+            if (!state.isScratching) return;
+            
+            // 获取坐标
+            const rect = elements.scratchCanvas.getBoundingClientRect();
+            let x, y;
+            
+            if (e.type.includes('touch')) {
+                x = e.touches[0].clientX - rect.left;
+                y = e.touches[0].clientY - rect.top;
+            } else {
+                x = e.clientX - rect.left;
+                y = e.clientY - rect.top;
+            }
+            
+            // 绘制透明圆形（模拟刮擦）
+            state.ctx.beginPath();
+            state.ctx.arc(x, y, 20, 0, Math.PI * 2);
+            state.ctx.fill();
+            
+            // 播放音效
+            elements.scratchSound.currentTime = 0;
+            elements.scratchSound.play();
+            
+            // 检测刮开的格子
+            checkRevealedItems(x, y);
+        }
+        
+        // 检测被刮开的格子
+        function checkRevealedItems(x, y) {
+            const cellWidth = elements.scratchCanvas.width / config.cols;
+            const cellHeight = elements.scratchCanvas.height / config.rows;
+            
+            const col = Math.floor(x / cellWidth);
+            const row = Math.floor(y / cellHeight);
+            
+            const index = row * config.cols + col;
+            const item = state.items[index];
+            
+            if (item && !item.revealed) {
+                item.revealed = true;
+                item.element.style.visibility = 'visible';
+                state.revealedCells++;
+                
+                if (item.isG) {
+                    state.gCount++;
+                    item.element.style.transform = 'scale(1.3)';
+                    item.element.style.transition = 'transform 0.3s';
+                }
+                
+                updateStats();
+                
+                // 如果全部刮开，显示结果
+                if (state.revealedCells === config.rows * config.cols) {
+                    setTimeout(showResult, 500);
+                }
+            }
+        }
+        
+        // 更新统计信息
+        function updateStats() {
+            elements.gCountDisplay.textContent = state.gCount;
+            elements.revealedCountDisplay.textContent = state.revealedCells;
+            
+            // 显示当前匹配的奖励等级
+            const matchedLevel = config.prizeLevels.reduce((acc, level) => {
+                return state.gCount >= level.minG ? level : acc;
+            }, config.prizeLevels[0]);
+            
+            elements.prizeLevelDisplay.textContent = matchedLevel.name;
+            elements.prizeLevelDisplay.style.color = matchedLevel.color;
+        }
+        
+        // 显示抽奖结果
+        function showResult() {
+            elements.winSound.currentTime = 0;
+            elements.winSound.play();
+            
+            elements.prizeResult.textContent = state.finalPrize.name;
+            elements.prizeResult.style.color = state.finalPrize.color;
+            elements.prizeDesc.textContent = `恭喜获得: ${state.finalPrize.reward}`;
+            elements.resultModal.style.display = 'flex';
+            
+            // 调试信息（正式发布时可移除）
+            console.log(`预设奖品: ${state.finalPrize.name}, 实际刮出G: ${state.gCount}`);
+        }
+        
+        // 事件监听
+        function setupEventListeners() {
+            // 鼠标/触摸开始
+            elements.scratchCanvas.addEventListener('mousedown', () => {
+                state.isScratching = true;
+            });
+            
+            elements.scratchCanvas.addEventListener('touchstart', (e) => {
+                state.isScratching = true;
+                handleScratch(e);
+            });
+            
+            // 鼠标/触摸移动
+            elements.scratchCanvas.addEventListener('mousemove', handleScratch);
+            elements.scratchCanvas.addEventListener('touchmove', handleScratch);
+            
+            // 鼠标/触摸结束
+            elements.scratchCanvas.addEventListener('mouseup', () => {
+                state.isScratching = false;
+            });
+            
+            elements.scratchCanvas.addEventListener('mouseleave', () => {
+                state.isScratching = false;
+            });
+            
+            elements.scratchCanvas.addEventListener('touchend', () => {
+                state.isScratching = false;
+            });
+            
+            // 重置按钮
+            elements.resetBtn.addEventListener('click', initScratchCard);
+            
+            // 弹窗关闭
+            elements.closeModal.addEventListener('click', () => {
+                elements.resultModal.style.display = 'none';
+            });
+            
+            elements.confirmBtn.addEventListener('click', () => {
+                elements.resultModal.style.display = 'none';
+            });
+        }
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+            initScratchCard();
+        });
+    </script>
+</body>
+</html>
